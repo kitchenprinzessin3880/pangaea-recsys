@@ -31,6 +31,15 @@
         "query_2" : {
           "type" : "text",
           "term_vector": "yes"
+        },
+        "pagerank" : {
+          "type" : "float"
+        },
+        "downloads" : {
+          "type" : "integer"
+        },
+        "related_downloads" : {
+          "type" : "integer"
         }
       }
     }
