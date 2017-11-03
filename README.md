@@ -9,7 +9,7 @@ POST /pangaea-recommender/dataset/_search HTTP/1.1
   "query": {
     "more_like_this": {
       "fields": [
-        "queryterm"
+        "query_1"
       ],
       "like": [
         {
