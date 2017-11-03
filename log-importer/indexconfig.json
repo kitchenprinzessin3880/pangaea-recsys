@@ -24,7 +24,11 @@
         "enabled" : true
       },
       "properties" : {
-        "queryterm" : {
+        "query_1" : {
+          "type" : "text",
+          "term_vector": "yes"
+        },
+        "query_2" : {
           "type" : "text",
           "term_vector": "yes"
         }
