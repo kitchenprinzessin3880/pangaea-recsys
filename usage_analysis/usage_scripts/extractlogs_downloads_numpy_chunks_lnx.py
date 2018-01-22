@@ -59,9 +59,9 @@ class ProcessLogs:
         dfmain._id = dfmain._id.apply(lambda x: x.split('%')[0])
         dfmain._id = dfmain._id.astype(int)
         # convert time
-        dfmain['time'] = dfmain['time'].str.strip('[]').str[:-6]
-        dfmain['time'] = pd.to_datetime(dfmain['time'], format='%d/%b/%Y:%H:%M:%S')
-        dfmain['time'] = dfmain['time'].dt.date
+        #dfmain['time'] = dfmain['time'].str.strip('[]').str[:-6]
+        #dfmain['time'] = pd.to_datetime(dfmain['time'], format='%d/%b/%Y:%H:%M:%S')
+        #dfmain['time'] = dfmain['time'].dt.date
         return dfmain
 
     def readLogs(self):
@@ -184,7 +184,7 @@ class ProcessLogs:
         df_sparse = sparse.csr_matrix((data, (row, col)), dtype=np.int8,shape=(len_dataset, len_person))
 
         values, *ij = zip(*self.f(df_sparse.toarray().astype(int), 10000, -1, v=True))
-        print("OK")
+        print("Concaneting..")
         values = np.concatenate(values) # MemoryError - big data!!!!
         ij = list(map(np.concatenate, ij))
 
@@ -217,7 +217,6 @@ class ProcessLogs:
         with open("results/downloads.json", 'w') as fp:
             json.dump(json_data, fp)
 
-        #sim.close()
 
 start_time = time.time()
 print ('Start Time: '+time.strftime("%H:%M:%S"))
