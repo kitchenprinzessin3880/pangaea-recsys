@@ -11,7 +11,6 @@ import tables
 import pickle
 import json
 from scipy.sparse import coo_matrix,csr_matrix
-from pandas.api.types import CategoricalDtype
 
 class ProcessLogs:
     def __init__(self):
@@ -20,17 +19,19 @@ class ProcessLogs:
         args = ap.parse_args()
         config = ConfigParser.ConfigParser()
         config.read(args.config)
-        self.source_folder = config['DATASOURCE']['source_folder']
+        self.parent_dir = config['GLOBAL']['main_dir']
         self.source_file_prefix = config['DATASOURCE']['source_file_prefix']
         self.source_file_suffix = config['DATASOURCE']['source_file_suffix']
         self.num_top_dataset = int(config['DATASOURCE']['number_of_reldatasets'])
-        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(os.path.realpath('__file__'))))
-        self.source_dir = os.path.abspath(os.path.join(parent_dir, self.source_folder))
-        self.hdf_file = config['DATASOURCE']['hdf_file_name']
+        #parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(os.path.realpath('__file__'))))
+        self.source_dir = os.path.join(self.parent_dir, config['DATASOURCE']['source_folder'])
+        self.DATA_LIST_FILE = os.path.join(self.parent_dir,config['DATASOURCE']['datalist_file'] )
+        self.HDF_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['hdf_file'])
+        self.JSONUSAGE_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['usage_file'])
 
         # read file with data ids
         self.published_datasets = []
-        idfile_dir = parent_dir + '\\usage_scripts\\results\\ids.p'
+        idfile_dir = self.parent_dir + '/usage_scripts/results/ids.p'
         with open(idfile_dir, 'rb') as fp:
             self.published_datasets = pickle.load(fp)
 
@@ -67,13 +68,14 @@ class ProcessLogs:
 
     def readLogs(self):
         dfs = []
-        for file in os.listdir(self.source_dir):
+        dirs = os.path.join(self.parent_dir, self.source_dir)
+        for file in os.listdir(dirs):
             if file.startswith(self.source_file_prefix) and file.endswith(self.source_file_suffix):
                 filepath = os.path.join(self.source_dir, file)
                 data = pd.read_csv(filepath, compression='bz2', encoding='ISO-8859-1',
                                    sep=r'\s(?=(?:[^"]*"[^"]*")*[^"]*$)(?![^\[]*\])', engine='python', header=0,
-                                   usecols=[0, 3, 4, 5, 8],
-                                   names=['ip', 'time', 'request', 'status', 'user_agent'],
+                                   usecols=[0,3, 4, 5, 8],
+                                   names=['ip','time' ,'request', 'status', 'user_agent'],
                                    converters={"request": self.parse_str})
                 df = self.cleanLogs(data)
                 dfs.append(df)
@@ -177,17 +179,15 @@ class ProcessLogs:
         outF.close()
 
         data = group['download_count'].tolist()
-        #row_type = CategoricalDtype(categories=dataset_u)
-        #row = group._id.astype.astype(row_type)
         row = group._id.astype('category', categories=dataset_u).cat.codes
         col = group.ip.astype('category', categories=person_u).cat.codes
         len_dataset = len(dataset_u)
         len_person =  len(person_u)
         print("Datasets vs Ips :",str(len_dataset), str(len_person))#(309235, 81566)
         df_sparse = sparse.csr_matrix((data, (row, col)), dtype=np.int8,shape=(len_dataset, len_person))
-
+        print('Sparse matrix size in bytes:', df_sparse.data.nbytes)
         values, *ij = zip(*self.f(df_sparse.toarray().astype(int), 10000, -1, v=True))
-        print("concatening...")
+        print(" Concaneting..")
         values = np.concatenate(values) # MemoryError - big data!!!!
         ij = list(map(np.concatenate, ij))
 
@@ -198,6 +198,7 @@ class ProcessLogs:
 
         print('Sim Done!')
         m, n = sim.shape
+        print('Sim size in bytes:', sim.data.nbytes)
 
         json_data = {}
         for i in range(m):
@@ -220,7 +221,6 @@ class ProcessLogs:
         with open("results/downloads.json", 'w') as fp:
             json.dump(json_data, fp)
 
-        #sim.stop()
 
 start_time = time.time()
 print ('Start Time: '+time.strftime("%H:%M:%S"))
