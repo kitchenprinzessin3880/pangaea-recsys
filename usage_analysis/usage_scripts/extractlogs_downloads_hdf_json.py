@@ -20,18 +20,20 @@ class ProcessLogs:
         args = ap.parse_args()
         config = ConfigParser.ConfigParser()
         config.read(args.config)
-        self.source_folder = config['DATASOURCE']['source_folder']
+        self.parent_dir = config['GLOBAL']['main_dir']
         self.source_file_prefix = config['DATASOURCE']['source_file_prefix']
         self.source_file_suffix = config['DATASOURCE']['source_file_suffix']
         self.num_top_dataset = int(config['DATASOURCE']['number_of_reldatasets'])
-        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(os.path.realpath('__file__'))))
-        self.source_dir = os.path.abspath(os.path.join(parent_dir, self.source_folder))
-        self.hdf_file = config['DATASOURCE']['hdf_file_name']
+        self.source_dir = os.path.join(self.parent_dir, config['DATASOURCE']['source_folder'])
+        self.DATA_LIST_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['datalist_file'])
+        self.HDF_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['hdf_file'])
+        self.JSONUSAGE_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['usage_file'])
+        self.PUBLISHED_DATA_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['published_data_file'])
 
         # read file with data ids
         self.published_datasets = []
-        idfile_dir = parent_dir + '\\usage_scripts\\results\\ids.p'
-        with open(idfile_dir, 'rb') as fp:
+        # idfile_dir = self.parent_dir + '/usage_scripts/results/ids.p'
+        with open(self.PUBLISHED_DATA_FILE, 'rb') as fp:
             self.published_datasets = pickle.load(fp)
 
     def parse_str(self,x):
@@ -60,14 +62,15 @@ class ProcessLogs:
         dfmain._id = dfmain._id.apply(lambda x: x.split('%')[0])
         dfmain._id = dfmain._id.astype(int)
         # convert time
-        dfmain['time'] = dfmain['time'].str.strip('[]').str[:-6]
-        dfmain['time'] = pd.to_datetime(dfmain['time'], format='%d/%b/%Y:%H:%M:%S')
-        dfmain['time'] = dfmain['time'].dt.date
+        #dfmain['time'] = dfmain['time'].str.strip('[]').str[:-6]
+        #dfmain['time'] = pd.to_datetime(dfmain['time'], format='%d/%b/%Y:%H:%M:%S')
+        #dfmain['time'] = dfmain['time'].dt.date
         return dfmain
 
     def readLogs(self):
         dfs = []
-        for file in os.listdir(self.source_dir):
+        dirs = os.path.join(self.parent_dir, self.source_dir)
+        for file in os.listdir(dirs):
             if file.startswith(self.source_file_prefix) and file.endswith(self.source_file_suffix):
                 filepath = os.path.join(self.source_dir, file)
                 data = pd.read_csv(filepath, compression='bz2', encoding='ISO-8859-1',
@@ -80,10 +83,10 @@ class ProcessLogs:
 
         # Concatenate all data into one DataFrame
         df_final = pd.concat(dfs, ignore_index=True)
-        print("before",str(df_final.shape))
+        print("Before: ",str(df_final.shape))
         # exlude rows that contains old data
         df_final = df_final[df_final['_id'].isin(self.published_datasets)]
-        print("after",str(df_final.shape))
+        print("After - remove old datasets: ",str(df_final.shape))
         return df_final
 
 
@@ -162,7 +165,7 @@ class ProcessLogs:
         person_u = list(group.ip.unique())
         dataset_u = list(group._id.unique())
 
-        outF = open("results/data_list.txt", "w")
+        outF = open(self.DATA_LIST_FILE, "w")
         for line in dataset_u:
             outF.write(str(line))
             outF.write("\n")
@@ -176,11 +179,11 @@ class ProcessLogs:
         print("Datasets vs Ips :",str(len_dataset), str(len_person))#(309235, 81566)
         df_sparse = sparse.csr_matrix((data, (row, col)), dtype=np.int8,shape=(len_dataset, len_person))
 
-        self.store_sparse_mat(df_sparse, 'csrmatrix', self.hdf_file)
-        sparsemat = self.load_sparse_mat('csrmatrix', self.hdf_file)
+        self.store_sparse_mat(df_sparse, 'csrmatrix', self.HDF_FILE)
+        sparsemat = self.load_sparse_mat('csrmatrix', self.HDF_FILE)
 
         m, n = sparsemat.shape
-        f = tables.open_file( self.hdf_file, 'w')
+        f = tables.open_file( self.HDF_FILE, 'w')
         filters = tables.Filters(complevel=5, complib='blosc')
         sim = f.create_carray(f.root, 'similarity_matrix', tables.Float32Atom(), shape=(m, m), filters=filters)
 
@@ -216,10 +219,8 @@ class ProcessLogs:
             data['total_downloads'] = int(downloads)
             json_data[target_id] = data
 
-        with open("results/downloads.json", 'w') as fp:
+        with open(self.JSONUSAGE_FILE, 'w') as fp:
             json.dump(json_data, fp)
-
-        sim.close()
 
 start_time = time.time()
 print ('Start Time: '+time.strftime("%H:%M:%S"))

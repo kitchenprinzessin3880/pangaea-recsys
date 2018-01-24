@@ -26,18 +26,20 @@ class ProcessLogs:
         args = ap.parse_args()
         config = ConfigParser.ConfigParser()
         config.read(args.config)
-        self.source_folder = config['DATASOURCE']['source_folder']
+        self.parent_dir = config['GLOBAL']['main_dir']
         self.source_file_prefix = config['DATASOURCE']['source_file_prefix']
         self.source_file_suffix = config['DATASOURCE']['source_file_suffix']
         self.num_top_dataset = int(config['DATASOURCE']['number_of_reldatasets'])
-        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(os.path.realpath('__file__'))))
-        self.source_dir = os.path.abspath(os.path.join(parent_dir, self.source_folder))
-        self.hdf_file = config['DATASOURCE']['hdf_file_name']
+        self.source_dir = os.path.join(self.parent_dir, config['DATASOURCE']['source_folder'])
+        self.DATA_LIST_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['datalist_file'])
+        self.HDF_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['hdf_file'])
+        self.JSONUSAGE_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['usage_file'])
+        self.PUBLISHED_DATA_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['published_data_file'])
 
         # read file with data ids
         self.published_datasets = []
-        idfile_dir = parent_dir + '\\usage_scripts\\results\\ids.p'
-        with open(idfile_dir, 'rb') as fp:
+        # idfile_dir = self.parent_dir + '/usage_scripts/results/ids.p'
+        with open(self.PUBLISHED_DATA_FILE, 'rb') as fp:
             self.published_datasets = pickle.load(fp)
 
     def parse_str(self,x):
@@ -66,30 +68,31 @@ class ProcessLogs:
         dfmain._id = dfmain._id.apply(lambda x: x.split('%')[0])
         dfmain._id = dfmain._id.astype(int)
         # convert time
-        dfmain['time'] = dfmain['time'].str.strip('[]').str[:-6]
-        dfmain['time'] = pd.to_datetime(dfmain['time'], format='%d/%b/%Y:%H:%M:%S')
-        dfmain['time'] = dfmain['time'].dt.date
+        #dfmain['time'] = dfmain['time'].str.strip('[]').str[:-6]
+        #dfmain['time'] = pd.to_datetime(dfmain['time'], format='%d/%b/%Y:%H:%M:%S')
+        #dfmain['time'] = dfmain['time'].dt.date
         return dfmain
 
     def readLogs(self):
         dfs = []
-        for file in os.listdir(self.source_dir):
+        dirs = os.path.join(self.parent_dir, self.source_dir)
+        for file in os.listdir(dirs):
             if file.startswith(self.source_file_prefix) and file.endswith(self.source_file_suffix):
                 filepath = os.path.join(self.source_dir, file)
                 data = pd.read_csv(filepath, compression='bz2', encoding='ISO-8859-1',
                                    sep=r'\s(?=(?:[^"]*"[^"]*")*[^"]*$)(?![^\[]*\])', engine='python', header=0,
-                                   usecols=[0, 3, 4, 5, 8],
-                                   names=['ip', 'time', 'request', 'status', 'user_agent'],
+                                   usecols=[0,3, 4, 5, 8],
+                                   names=['ip','time', 'request', 'status', 'user_agent'],
                                    converters={"request": self.parse_str})
                 df = self.cleanLogs(data)
                 dfs.append(df)
 
         # Concatenate all data into one DataFrame
         df_final = pd.concat(dfs, ignore_index=True)
-        print("before",str(df_final.shape))
+        print("Before: ",str(df_final.shape))
         # exlude rows that contains old data
         df_final = df_final[df_final['_id'].isin(self.published_datasets)]
-        print("after",str(df_final.shape))
+        print("After - remove old datasets :",str(df_final.shape))
         return df_final
 
 
@@ -156,7 +159,7 @@ class ProcessLogs:
         person_u = list(group.ip.unique())
         dataset_u = list(group._id.unique())
 
-        outF = open("results/data_list.txt", "w")
+        outF = open(self.DATA_LIST_FILE, "w")
         for line in dataset_u:
             outF.write(str(line))
             outF.write("\n")
@@ -179,14 +182,15 @@ class ProcessLogs:
 
         # load PySpark using findSpark package
 
-        SparkContext.setSystemProperty('spark.executor.memory', '5g')
-        SparkContext.setSystemProperty('spark.driver.memory', '5g')
+        #SparkContext.setSystemProperty('spark.executor.memory', '5g')
+        #SparkContext.setSystemProperty('spark.driver.memory', '5g')
         #SparkContext.setSystemProperty('spark.executor.heartbeatInterval', '1000000000s')
         findspark.init()
         #conf = SparkConf().setAppName("simdownload")
         #conf = (conf.setMaster('local[*]').set('spark.executor.memory', '4G'))#.set('spark.executor.heartbeatInterval','1000000s')
         #sc = SparkContext(conf=conf)
-        sc = SparkContext("local", "simdownload")
+        #sc = SparkContext("local", "simdownload")
+        sc = SparkContext(appName= "simdownload")
         sqlContext = SQLContext(sc)
         #print(sc._conf.getAll())
         sv_rdd = sc.parallelize(sparsemat.toarray(), numSlices= 1000)
@@ -199,7 +203,7 @@ class ProcessLogs:
                 row_dict = row.asDict()
                 return row_with_index(*[uid] + [row_dict.get(c) for c in columns])
             return _make_row
-        print('ok')
+        print('parallelize-ok')
 
         f = make_row(dfspark.columns)
         # create a new dataframe with id column (use indexes)
@@ -241,12 +245,11 @@ class ProcessLogs:
             data['total_downloads'] = int(downloads)
             json_data[target_id] = data
 
-        print('Time Sim 1: ' + time.strftime("%H:%M:%S"))
-        with open("results/downloads.json", 'w') as fp:
+        print('Time JSONUSAGE_FILE 1: ' + time.strftime("%H:%M:%S"))
+        with open(self.JSONUSAGE_FILE, 'w') as fp:
             json.dump(json_data, fp)
 
-        print('Time Sim 2: ' + time.strftime("%H:%M:%S"))
-
+        print('Time JSONUSAGE_FILE 2: ' + time.strftime("%H:%M:%S"))
         sc.stop()
 
 start_time = time.time()

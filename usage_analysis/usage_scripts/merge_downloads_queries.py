@@ -12,5 +12,5 @@ for k, v in chain(downloads.items(), queries.items()):
     super_dict.setdefault(k, {}).update(v)
 
 print("Len Merge :",len(super_dict.keys()))
-with open('results/usage.json', 'w') as outfile:
+with open('results/usage_pysprk.json', 'w') as outfile:
     json.dump(super_dict, outfile)

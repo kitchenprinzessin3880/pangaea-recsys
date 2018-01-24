@@ -1,1 +1,33 @@
 usage analysis/pangaea_usage/
+usage_analysis/test/.ipynb_checkpoints/GetSize Python Data Types-checkpoint.ipynb
+usage_analysis/test/GetSize Python Data Types.ipynb
+usage_analysis/test/pangaea.sh
+usage_analysis/test/test_scroll.py
+usage_analysis/usage_scripts/temp_scripts/encoder.py
+usage_analysis/usage_scripts/temp_scripts/extractlogs_downloads_sklearncosine_smallmat.py
+usage_analysis/usage_scripts/temp_scripts/extractlogs_query_combine_old.py
+usage_analysis/usage_scripts/temp_scripts/get_published_datasetid_elastic_scan_old.py
+usage_analysis/usage_scripts/temp_scripts/get_published_datasetid_oai.py
+usage_analysis/usage_scripts/results/data_list.txt
+usage_analysis/usage_scripts/results/downloads.json
+usage_analysis/usage_scripts/results/ids.p
+usage_analysis/usage_scripts/results/queries.json
+usage_analysis/usage_scripts/results/simstore.h5
+usage_analysis/usage_scripts/results/usage.json
+usage_analysis/usage_source/
+usage_analysis/usage_notebooks/.ipynb_checkpoints/Merge Download and Query Files-checkpoint.ipynb
+usage_analysis/usage_notebooks/.ipynb_checkpoints/Pagerank-checkpoint.ipynb
+usage_analysis/usage_notebooks/.ipynb_checkpoints/PANGAEA - Usage - Download - Filtered - HDFS - Cosine-checkpoint.ipynb
+usage_analysis/usage_notebooks/.ipynb_checkpoints/PANGAEA - Usage - Download-checkpoint.ipynb
+usage_analysis/usage_notebooks/.ipynb_checkpoints/PANGAEA - Usage - QueryTerm Dataset-checkpoint.ipynb
+usage_analysis/usage_notebooks/.ipynb_checkpoints/Retrive PANGAEA Ids-checkpoint.ipynb
+usage_analysis/usage_notebooks/data_all.json
+usage_analysis/usage_notebooks/download_related_data.json
+usage_analysis/usage_notebooks/downloads.csv
+usage_analysis/usage_notebooks/Merge Download and Query Files.ipynb
+usage_analysis/usage_notebooks/Pagerank.ipynb
+usage_analysis/usage_notebooks/PANGAEA - Usage - Download - Filtered - HDFS - Cosine.ipynb
+usage_analysis/usage_notebooks/PANGAEA - Usage - Download.ipynb
+usage_analysis/usage_notebooks/PANGAEA - Usage - QueryTerm Dataset.ipynb
+usage_analysis/usage_notebooks/Retrive PANGAEA Ids.ipynb
+usage_analysis/usage_source_test/doi.pangaea.de-access.201206170000.bz2

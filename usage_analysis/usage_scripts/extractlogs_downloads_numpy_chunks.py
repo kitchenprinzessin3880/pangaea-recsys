@@ -28,11 +28,12 @@ class ProcessLogs:
         self.DATA_LIST_FILE = os.path.join(self.parent_dir,config['DATASOURCE']['datalist_file'] )
         self.HDF_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['hdf_file'])
         self.JSONUSAGE_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['usage_file'])
+        self.PUBLISHED_DATA_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['published_data_file'])
 
         # read file with data ids
         self.published_datasets = []
-        idfile_dir = self.parent_dir + '/usage_scripts/results/ids.p'
-        with open(idfile_dir, 'rb') as fp:
+        #idfile_dir = self.parent_dir + '/usage_scripts/results/ids.p'
+        with open(self.PUBLISHED_DATA_FILE, 'rb') as fp:
             self.published_datasets = pickle.load(fp)
 
     def parse_str(self,x):
@@ -82,10 +83,10 @@ class ProcessLogs:
 
         # Concatenate all data into one DataFrame
         df_final = pd.concat(dfs, ignore_index=True)
-        print("before",str(df_final.shape))
+        print("Before: ",str(df_final.shape))
         # exlude rows that contains old data
         df_final = df_final[df_final['_id'].isin(self.published_datasets)]
-        print("after",str(df_final.shape))
+        print("After - remove old datasets :",str(df_final.shape))
         return df_final
 
 
@@ -148,7 +149,7 @@ class ProcessLogs:
     #we extract the cosine similarities by calculating them
     #ourselves over each sub-chunk and track where the similarities were greater than our threshold.
     def f(self, t, c, p=-1, v=False):
-        n = (t ** 2).sum(1) ** .5 #RuntimeWarning: invalid value encountered in power
+        n = (t ** 2).sum(1) ** .5
         g = lambda: ((x, t[x:x + c]) for x in range(0, t.shape[0], c))
         h = lambda a, b, i, j: a.dot(b.T) / n[i:i + c, None] / n[j:j + c]
         d = lambda s: (s * (1 - np.eye(s.shape[0])))
@@ -172,7 +173,8 @@ class ProcessLogs:
         person_u = list(group.ip.unique())
         dataset_u = list(group._id.unique())
 
-        outF = open("results/data_list.txt", "w")
+
+        outF = open(self.DATA_LIST_FILE, "w")
         for line in dataset_u:
             outF.write(str(line))
             outF.write("\n")
@@ -183,7 +185,7 @@ class ProcessLogs:
         col = group.ip.astype('category', categories=person_u).cat.codes
         len_dataset = len(dataset_u)
         len_person =  len(person_u)
-        print("Datasets vs Ips :",str(len_dataset), str(len_person))#(309235, 81566)
+        print("Datasets vs Ips :",str(len_dataset), str(len_person))#310177 x 81650
         df_sparse = sparse.csr_matrix((data, (row, col)), dtype=np.int8,shape=(len_dataset, len_person))
         print('Sparse matrix size in bytes:', df_sparse.data.nbytes)
         values, *ij = zip(*self.f(df_sparse.toarray().astype(int), 10000, -1, v=True))
@@ -193,10 +195,10 @@ class ProcessLogs:
 
         csrmatrix = csr_matrix((values, ij))
         csrmatrix.setdiag(1)
-        self.store_sparse_mat(csrmatrix, 'csrmatrix_sim', self.hdf_file)
-        sim = self.load_sparse_mat('csrmatrix_sim', self.hdf_file)
+        self.store_sparse_mat(csrmatrix, 'csrmatrix_sim', self.HDF_FILE)
+        sim = self.load_sparse_mat('csrmatrix_sim', self.HDF_FILE)
 
-        print('Sim Done!')
+        print('Sim Compute Done!')
         m, n = sim.shape
         print('Sim size in bytes:', sim.data.nbytes)
 
@@ -218,7 +220,7 @@ class ProcessLogs:
             data['total_downloads'] = int(downloads)
             json_data[target_id] = data
 
-        with open("results/downloads.json", 'w') as fp:
+        with open(self.JSONUSAGE_FILE, 'w') as fp:
             json.dump(json_data, fp)
 
 
