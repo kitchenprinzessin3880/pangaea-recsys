@@ -10,12 +10,9 @@ import numpy as np
 import tables
 import pickle
 import json
-import findspark
-import pyspark
 from pyspark.sql.types import Row
 import pyspark.sql.functions as psf
 from pyspark.mllib.linalg.distributed import IndexedRow, IndexedRowMatrix
-import pyspark.sql.functions
 from pyspark import SparkConf,SparkContext,SQLContext
 from pyspark.sql.types import *
 
@@ -35,7 +32,6 @@ class ProcessLogs:
         self.HDF_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['hdf_file'])
         self.JSONUSAGE_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['usage_file'])
         self.PUBLISHED_DATA_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['published_data_file'])
-
         # read file with data ids
         self.published_datasets = []
         # idfile_dir = self.parent_dir + '/usage_scripts/results/ids.p'
@@ -68,9 +64,9 @@ class ProcessLogs:
         dfmain._id = dfmain._id.apply(lambda x: x.split('%')[0])
         dfmain._id = dfmain._id.astype(int)
         # convert time
-        #dfmain['time'] = dfmain['time'].str.strip('[]').str[:-6]
-        #dfmain['time'] = pd.to_datetime(dfmain['time'], format='%d/%b/%Y:%H:%M:%S')
-        #dfmain['time'] = dfmain['time'].dt.date
+        dfmain['time'] = dfmain['time'].str.strip('[]').str[:-6]
+        dfmain['time'] = pd.to_datetime(dfmain['time'], format='%d/%b/%Y:%H:%M:%S')
+        dfmain['time'] = dfmain['time'].dt.date
         return dfmain
 
     def readLogs(self):
@@ -185,7 +181,7 @@ class ProcessLogs:
         #SparkContext.setSystemProperty('spark.executor.memory', '5g')
         #SparkContext.setSystemProperty('spark.driver.memory', '5g')
         #SparkContext.setSystemProperty('spark.executor.heartbeatInterval', '1000000000s')
-        findspark.init()
+
         #conf = SparkConf().setAppName("simdownload")
         #conf = (conf.setMaster('local[*]').set('spark.executor.memory', '4G'))#.set('spark.executor.heartbeatInterval','1000000s')
         #sc = SparkContext(conf=conf)
@@ -193,7 +189,7 @@ class ProcessLogs:
         sc = SparkContext(appName= "simdownload")
         sqlContext = SQLContext(sc)
         #print(sc._conf.getAll())
-        sv_rdd = sc.parallelize(sparsemat.toarray(), numSlices= 1000)
+        sv_rdd = sc.parallelize(sparsemat.toarray())
         #populate the values from rdd to dataframe
         dfspark = sv_rdd.map(lambda x: Row(**f(x))).toDF()
 
@@ -223,22 +219,23 @@ class ProcessLogs:
         json_data = {}
         for i in range(m):
             target_id = int(dataset_u[i])
-            dftemp = dfsim.where((psf.col("from") == target_id) | (psf.col("to") == target_id)).sort(psf.desc("sim")).limit(self.num_top_dataset)
+            dftemp = dfsim.where((psf.col("from") == i) | (psf.col("to") == i)).sort(psf.desc("sim")).limit(self.num_top_dataset)
             df = dftemp.toPandas()
-            #v = df.iloc[:, :-1].values
-            #ii = np.arange(len(df))[:, None]
-            #ji = np.argsort(v == target_id, axis=1)  # replace `1` with your ID
-            #related_ids = (v[ii, ji][:, 0]).tolist()
-            #related_datasets = [dataset_u[i] for i in related_ids]
+            # v = df.iloc[:, :-1].values
+            # ii = np.arange(len(df))[:, None]
+            # ji = np.argsort(v == i, axis=1)  # replace `1` with your ID
+            # related_ids = (v[ii, ji][:, 0]).tolist()
+            # related_datasets = [dataset_u[i] for i in related_ids]
             myarr = []
-            for index, row in df.iterrows():
-                from_id = row['from']
-                to_id = row['to']
-                if (from_id != target_id):
+            for index, rw in df.iterrows(): #this is a bit faster than numpy above
+                from_id = rw['from']
+                to_id = rw['to']
+                if (from_id != i):
                     myarr.append(int(from_id))
-                if (to_id != target_id):
+                if (to_id != i):
                     myarr.append(int(to_id))
-            related_datasets = [dataset_u[i] for i in myarr]
+            related_datasets = [int(dataset_u[i]) for i in myarr]
+
             downloads = download_count.loc[target_id]['count']
             data = {}
             data['related_datasets'] = related_datasets

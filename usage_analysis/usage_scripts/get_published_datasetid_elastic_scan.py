@@ -41,7 +41,7 @@ print ('Start Time: '+time.strftime("%H:%M:%S"))
 
 # scan function in standard elasticsearch python API
 rs = es.search(index=ES_INDEX, doc_type =DOC_TYPE,
-               scroll='60s',
+               scroll='10s',
                size=1000, _source = "false",
                body={
                    "query": {"match_all": {}}
@@ -67,7 +67,7 @@ ids =[]
 for dobj in data:
     ids.append(dobj["_id"])
 
-with open('results/ids.p', 'wb') as fp:
+with open('ids.p', 'wb') as fp:
     pickle.dump(ids, fp)
 
 secs =  (time.time() - start_time)
