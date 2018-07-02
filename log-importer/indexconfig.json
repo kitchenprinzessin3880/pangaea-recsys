@@ -32,13 +32,10 @@
           "type" : "text",
           "term_vector": "yes"
         },
-        "pagerank" : {
-          "type" : "float"
-        },
-        "downloads" : {
+        "total_downloads" : {
           "type" : "integer"
         },
-        "related_downloads" : {
+        "related_datasets" : {
           "type" : "integer"
         }
       }
