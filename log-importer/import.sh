@@ -13,4 +13,4 @@ JQ=./jq.exe
 curl -s -XDELETE "$SERVER/$INDEX"
 curl -s -XPUT "$SERVER/$INDEX" --data-binary @indexconfig.json
 
-cat $FILE | $JQ --compact-output '.[] | {"index": { "_id" : ._id }}, del(._id)' | curl -s -XPOST "$SERVER/$INDEX/$TYPE/_bulk" --data-binary @-
+cat $FILE | $JQ --compact-output 'to_entries[] | {"index": { "_id" : .key }}, .value' | curl -s -XPOST "$SERVER/$INDEX/$TYPE/_bulk" --data-binary @-
