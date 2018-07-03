@@ -16,7 +16,7 @@
      }
   },
   "mappings" : {
-    "dataset" : {
+    "rec" : {
       "_all" : {
         "enabled" : false 
       },

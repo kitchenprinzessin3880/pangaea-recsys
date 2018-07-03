@@ -5,7 +5,7 @@ FILE=$1
 # Elasticsearch config
 SERVER=http://localhost:9200
 INDEX=pangaea-recommender
-TYPE=dataset
+TYPE=rec
 
 # Tools config (add your install dir, if not in path)
 JQ=./jq.exe
