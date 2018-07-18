@@ -21,7 +21,8 @@ class ProcessLogs:
         args = ap.parse_args()
         config = ConfigParser.ConfigParser()
         config.read(args.config)
-        self.parent_dir = config['GLOBAL']['main_dir']
+        #self.parent_dir = config['GLOBAL']['main_dir']
+        self.parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(os.path.realpath('__file__'))))
         self.source_file_prefix = config['DATASOURCE']['source_file_prefix']
         self.source_file_suffix = config['DATASOURCE']['source_file_suffix']
         self.num_top_dataset = int(config['DATASOURCE']['number_of_reldatasets'])
@@ -29,7 +30,7 @@ class ProcessLogs:
         self.source_dir = os.path.join(self.parent_dir, config['DATASOURCE']['source_folder'])
         self.DATA_LIST_FILE = os.path.join(self.parent_dir,config['DATASOURCE']['datalist_file'] )
         self.HDF_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['hdf_file'])
-        self.JSONUSAGE_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['usage_file'])
+        self.JSONDOWNLOAD_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['download_file'])
         self.PUBLISHED_DATA_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['published_data_file'])
         self.LOG_FILE = os.path.join(self.parent_dir, config['DATASOURCE']['log_file'])
         self.NUMBER_PROCESS = int(config['DATASOURCE']['number_of_processes'])
@@ -182,7 +183,7 @@ class ProcessLogs:
 
         logging.info('Sim Compute Done For Total Datasets :%s', str(idx))
         logging.info('Writing recsys to json...')
-        with open(self.JSONUSAGE_FILE, 'w') as fp:
+        with open(self.JSONDOWNLOAD_FILE, 'w') as fp:
             json.dump(json_data, fp)
         logging.info('Writing recsys to json done!')
 

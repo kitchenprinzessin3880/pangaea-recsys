@@ -24,11 +24,11 @@ class ProcessLogs:
         self.source_folder = config['DATASOURCE']['source_folder']
         self.source_file_prefix = config['DATASOURCE']['source_file_prefix']
         self.source_file_suffix = config['DATASOURCE']['source_file_suffix']
-        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(os.path.realpath('__file__'))))
-        self.source_dir = os.path.abspath(os.path.join(parent_dir, self.source_folder))
+        self.parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(os.path.realpath('__file__'))))
+        self.source_dir = os.path.abspath(os.path.join(self.parent_dir, self.source_folder))
         # read file with data ids
         self.published_datasets = []
-        idfile_dir = parent_dir + '\\usage_scripts\\results\\ids.p'
+        idfile_dir = self.parent_dir + '\\results\\ids.p'
         with open(idfile_dir, 'rb') as fp:
             self.published_datasets = pickle.load(fp)
 
@@ -127,21 +127,27 @@ class ProcessLogs:
         dfgroup.loc[dfgroup.query_1 == "", 'query_1'] = None
         return dfgroup
 
-start_time = time.time()
-print ('Start Time: '+time.strftime("%H:%M:%S"))
-c1 = ProcessLogs()
-df_final = c1.readLogs()
-# only select referer related to pangaea, get query terms for each datasets
-domains = ['doi.pangaea.de', 'www.pangaea.de', '/search?']
-domains_joins = '|'.join(map(re.escape, domains))
-df_final = df_final[(df_final.referer.str.contains(domains_joins))]
-query_df = c1.getQueryTerms(df_final)
-query_df = query_df.reset_index()
-query_df = query_df.set_index('_id')
+def main():
+    start_time = time.time()
+    print ('Start Time: '+time.strftime("%H:%M:%S"))
+    c1 = ProcessLogs()
+    df_final = c1.readLogs()
+    # only select referer related to pangaea, get query terms for each datasets
+    domains = ['doi.pangaea.de', 'www.pangaea.de', '/search?']
+    domains_joins = '|'.join(map(re.escape, domains))
+    df_final = df_final[(df_final.referer.str.contains(domains_joins))]
+    query_df = c1.getQueryTerms(df_final)
+    query_df = query_df.reset_index()
+    query_df = query_df.set_index('_id')
 
-print('Total datasets:'+str(query_df.shape))
-query_df.to_json('results/queries.json',orient='index')
+    print('Total datasets:'+str(query_df.shape))
+    print(str(query_df.info()))
 
-secs =  (time.time() - start_time)
-print('Total Execution Time: '+str(dt.timedelta(seconds=secs)))
+    result_dir = c1.parent_dir + '\\results'
+    query_df.to_json(result_dir+'\\queries.json',orient='index')
+    secs =  (time.time() - start_time)
+    print('Total Execution Time: '+str(dt.timedelta(seconds=secs)))
+
+if __name__== "__main__":
+  main()
 
