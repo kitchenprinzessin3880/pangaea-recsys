@@ -3,11 +3,29 @@
     "number_of_shards" : 1,
     "number_of_replicas" : 0,
     "analysis" : {
+      "filter" : {
+       "remove_queryfield" : {
+        "type" : "pattern_replace",
+        "pattern" : "^([a-z]+:)+",
+        "replace": ""
+       },
+       "remove_techkeywords" : {
+        "type" : "pattern_replace",
+        "pattern" : "^(dataset|event|campaign|journal|author|pi|ref|basis|method|param|geocode|license|term|project|topotype)?\\d+$",
+        "replace": ""
+       },
+       "remove_fieldname_tokens": {
+        "type": "stop",
+        "stopwords": ["", "similar", "parent", "event", "campaign", "citation", "title", "topic", "label", "name", "matrixcolumn", 
+          "method", "parameter", "unit", "source", "volume", "pages", "year", "orcid", "optionallabel", "location", "device",
+          "basis", "project", "journal", "author", "email", "pi", "license", "topotype"]
+       }
+      },
       "analyzer" : {
        "default" : {
         "type" : "custom",
         "tokenizer" : "standard",
-        "filter" : ["standard", "lowercase"]
+        "filter" : ["standard", "lowercase", "remove_queryfield", "remove_techkeywords", "remove_fieldname_tokens", "unique"]
        }
       }
      },
