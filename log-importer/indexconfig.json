@@ -16,7 +16,8 @@
        },
        "remove_fieldname_tokens": {
         "type": "stop",
-        "stopwords": ["", "similar", "parent", "event", "campaign", "citation", "title", "topic", "label", "name", "matrixcolumn", 
+        "stopwords": ["", "similar", "parent", "and", "or",
+          "event", "campaign", "citation", "title", "topic", "label", "name", "matrixcolumn", 
           "method", "parameter", "unit", "source", "volume", "pages", "year", "orcid", "optionallabel", "location", "device",
           "basis", "project", "journal", "author", "email", "pi", "license", "topotype"]
        }
